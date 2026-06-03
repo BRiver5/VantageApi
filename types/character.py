@@ -1,4 +1,5 @@
-from FastAPI import FastAPI
+from __future__ import annotations
+from uuid import UUID
 from pydantic import BaseModel
 
 
@@ -16,6 +17,39 @@ class character(BaseModel):
     shield: bool
     initiative_bonus: int
     inspiration: int
+    background: int
+    alignment: str
+    player_id: UUID
+    character_speed: int
+    death_saves_success: int
+    death_saves_failure: int
+
+    personality_traits : list[str] | str
+    ideals: list[str] | str
+    bonds: list[str] | str
+    flaws: list[str] | str
+    age: int
+    height: int
+    weight: int
+    eyes: str
+    skin: str
+    hair: str
+    appearance: str
+    avatar_url: str
+    backstory: str
+    treasures: list[UUID | str]
+
+
+
+    features: list[UUID]
+    extra_features: list[str]
+
+
+    languages: list[str]
+    proficiences: list[UUID]
+    extra_proficiences: list[str]
+
+
 
     strength: int
     dexterity: int
@@ -31,6 +65,24 @@ class character(BaseModel):
     saving_throw_charisma: int
 
     skills: list[character_skill]
+
+
+    spells: list[UUID]
+    caster_class: list[UUID]
+    cantrips_amount: int
+    prepared_spells: int
+    spell_slots: dict[str, dict[int, int]] # {"class_name": {spell_level: spell_slots_amount}}
+    spells: list[UUID]
+
+
+    inventory: list[UUID | str]
+
+    copper: int
+    silver: int
+    electrum: int
+    gold: int
+    platinum: int
+
 
 
 class character_skill(BaseModel):
@@ -49,6 +101,10 @@ class class_info(BaseModel):
     armor_proficiencies: list[str]
     weapon_proficiencies: list[str]
     speed_bonus: int
+    class_source: UUID
+    is_caster: bool
+    default_spellcasting_ability: str | None
+
 
 class character_class(class_info):
     level: int
@@ -60,7 +116,7 @@ class race_info(BaseModel):
     speed: int
     darkvision: int
     languages: list[str]
-    race_source: str
+    race_source: UUID
     max_age: int
     age_of_adulthood: int
     race_type: str
@@ -68,4 +124,3 @@ class race_info(BaseModel):
     swimming_speed: int
     climbing_speed: int
 
-    
