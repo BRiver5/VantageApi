@@ -1,6 +1,11 @@
 from __future__ import annotations
+
 from uuid import UUID
-from pydantic import BaseModel
+
+from pydantic import BaseModel, Field
+
+from .class_resource import character_class_resource
+from .item import equipped_item
 
 
 class character(BaseModel):
@@ -43,6 +48,7 @@ class character(BaseModel):
 
     features: list[UUID]
     extra_features: list[str]
+    class_resources: list[character_class_resource] = Field(default_factory=list)
 
 
     languages: list[str]
@@ -66,8 +72,6 @@ class character(BaseModel):
 
     skills: list[character_skill]
 
-
-    spells: list[UUID]
     caster_class: list[UUID]
     cantrips_amount: int
     prepared_spells: int
@@ -76,6 +80,7 @@ class character(BaseModel):
 
 
     inventory: list[UUID | str]
+    equipped_items: list[equipped_item] = Field(default_factory=list)
 
     copper: int
     silver: int
@@ -104,6 +109,7 @@ class class_info(BaseModel):
     class_source: UUID
     is_caster: bool
     default_spellcasting_ability: str | None
+    class_resource_keys: list[str] = Field(default_factory=list)
 
 
 class character_class(class_info):
@@ -123,4 +129,3 @@ class race_info(BaseModel):
     flight_speed: int
     swimming_speed: int
     climbing_speed: int
-
