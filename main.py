@@ -1,9 +1,13 @@
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text, Column, String, Integer, DateTime
+from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 from sqlalchemy.pool import NullPool
+from sqlalchemy.dialects.postgresql import UUID
 from dotenv import load_dotenv
+from fastapi import FastAPI, Depends, HTTPException
+from pydantic import BaseModel
+from datetime import datetime
 import os
-from fastapi import FastAPI
-
+from uuid import uuid4
 # Load environment variables from .env
 load_dotenv()
 
@@ -21,19 +25,87 @@ DATABASE_URL = f"postgresql+psycopg2://{USER}:{PASSWORD}@{HOST}:{PORT}/{DBNAME}?
 # Using the Transaction Pooler, so we disable SQLAlchemy client side pooling
 # https://docs.sqlalchemy.org/en/20/core/pooling.html#switching-pool-implementations
 engine = create_engine(DATABASE_URL, poolclass=NullPool)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# Test the connection
-try:
-    with engine.connect() as connection:
-        print("Connection successful!")
-except Exception as e:
-    print(f"Failed to connect: {e}")
+class Base(DeclarativeBase):
+    pass
+
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String, nullable=False)
+    email = Column(String, unique=True, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+# Создаёт таблицы если их нет
+Base.metadata.create_all(engine)
+
+# --- Pydantic схемы ---
+
+class UserCreate(BaseModel):
+    name: str
+    email: str
+
+class UserResponse(BaseModel):
+    id: int
+    name: str
+    email: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
 
 
-# ASGI app for uvicorn / FastAPI
+# --- Dependency для сессии ---
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
 app = FastAPI()
-
 
 @app.get("/")
 def read_root():
     return {"status": "running"}
+
+# Get all users
+@app.get("/users", response_model=list[UserResponse])
+def get_users(db: Session = Depends(get_db)):
+    users = db.query(User).all()
+    return users
+
+# Create a user
+@app.post("/users", response_model=UserResponse)
+def create_user(user: UserCreate, db: Session = Depends(get_db)):
+    db_user = User(name=user.name, email=user.email)
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+    return db_user
+
+# Update a user
+@app.put("/users/{user_id}", response_model=UserResponse)
+def update_user(user_id: int, data: UserCreate, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    user.name = data.name
+    user.email = data.email
+    db.commit()
+    db.refresh(user)
+    return user
+
+# Delete a user
+@app.delete("/users/{user_id}")
+def delete_user(user_id: int, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    db.delete(user)
+    db.commit()
+    return {"deleted": user_id}
