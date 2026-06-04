@@ -3,7 +3,7 @@ from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 from sqlalchemy.pool import NullPool
 from sqlalchemy.dialects.postgresql import UUID
 from dotenv import load_dotenv
-from fastapi import FastAPI, Depends, HTTPException, File, UploadFile
+from fastapi import FastAPI, Depends, HTTPException, File, UploadFile, Response
 from pydantic import BaseModel
 from datetime import datetime
 import os
@@ -132,7 +132,7 @@ def delete_user(user_id: int, db: Session = Depends(get_db)):
 
 # Upload an image
 @app.post("/upload")
-async def upload_image(file: UploadFile = File(...), db: Session = Depends(get_db)):
+async def upload_image(file: UploadFile = File(...), filename: str = Form(...), db: Session = Depends(get_db)):
     content = await file.read()
     image = Image(
         filename=file.filename,
@@ -150,11 +150,14 @@ def get_image(image_id: int, db: Session = Depends(get_db)):
     image = db.query(Image).filter(Image.id == image_id).first()
     if not image:
         raise HTTPException(status_code=404, detail="Image not found")
-    return {
-        "filename": image.filename,
-        "content_type": image.content_type,
-        "data": image.data,
-    }
+    try:
+        data = image.data
+        # Some DB drivers may return memoryview
+        if isinstance(data, memoryview):
+            data = data.tobytes()
+        return Response(content=data, media_type=image.content_type, headers={"Content-Disposition": f'inline; filename="{image.filename}"'})
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to read image data")
 
 # Delete an image by ID
 @app.delete("/images/{image_id}")
