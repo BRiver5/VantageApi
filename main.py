@@ -9,6 +9,9 @@ from datetime import datetime
 import os
 from uuid import uuid4
 from schemas.character import character
+import cloudinary
+import cloudinary.uploader
+
 
 # Load environment variables from .env
 load_dotenv()
@@ -38,6 +41,13 @@ if DATABASE_URL.startswith("postgres://"):
 # https://docs.sqlalchemy.org/en/20/core/pooling.html#switching-pool-implementations
 engine = create_engine(DATABASE_URL, poolclass=NullPool)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+cloudinary.config(
+    cloud_name="Root",
+    api_key="416321573319424",
+    api_secret="uyXJOJEQOrerRcv6pBuHqGwuOFk",
+    secure=True
+)
 
 class Base(DeclarativeBase):
     pass
@@ -75,6 +85,11 @@ class UserResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class Image(Base):
+    id = Column(Integer, primary_key=True)
+    url = Column(String)
+    public_id = Column(String)
 
 
 # --- Dependency для сессии ---
@@ -132,39 +147,48 @@ def delete_user(user_id: int, db: Session = Depends(get_db)):
 
 # Upload an image
 @app.post("/upload")
-async def upload_image(file: UploadFile = File(...), db: Session = Depends(get_db)):
-    content = await file.read()
-    image = Image(
-        filename=file.filename,
-        content_type=file.content_type,
-        data=content,
-    )
-    db.add(image)
-    db.commit()
-    db.refresh(image)
-    return {"id": image.id}
+async def upload_image(file: UploadFile = File(...)):
+    result = cloudinary.uploader.upload(file.file)
 
-# Get an image by ID
+    return {
+        "url": result["secure_url"],
+        "public_id": result["public_id"]
+    }
+
+# Upload Bulk images
+@app.post("/upload-bulk")
+async def upload_bulk(files: list[UploadFile] = File(...)):
+    uploaded_images = []
+
+    for file in files:
+        result = cloudinary.uploader.upload(file.file)
+
+        uploaded_images.append({
+            "url": result["secure_url"],
+            "public_id": result["public_id"]
+        })
+
+    return {
+        "count": len(uploaded_images),
+        "images": uploaded_images
+    }
+
+# Get image by ID
 @app.get("/images/{image_id}")
 def get_image(image_id: int, db: Session = Depends(get_db)):
     image = db.query(Image).filter(Image.id == image_id).first()
+
     if not image:
         raise HTTPException(status_code=404, detail="Image not found")
-    try:
-        data = image.data
-        # Some DB drivers may return memoryview
-        if isinstance(data, memoryview):
-            data = data.tobytes()
-        return Response(content=data, media_type=image.content_type, headers={"Content-Disposition": f'inline; filename="{image.filename}"'})
-    except Exception:
-        raise HTTPException(status_code=500, detail="Failed to read image data")
+
+    return {
+        "id": image.id,
+        "url": image.url,
+        "public_id": image.public_id
+    }
 
 # Delete an image by ID
-@app.delete("/images/{image_id}")
-def delete_image(image_id: int, db: Session = Depends(get_db)):
-    image = db.query(Image).filter(Image.id == image_id).first()
-    if not image:
-        raise HTTPException(status_code=404, detail="Image not found")
-    db.delete(image)
-    db.commit()
-    return {"deleted": image_id}
+@app.delete("/images/{public_id}")
+def delete_image(public_id: str):
+    cloudinary.uploader.destroy(public_id)
+    return {"deleted": public_id}
