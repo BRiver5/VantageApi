@@ -132,7 +132,7 @@ def delete_user(user_id: int, db: Session = Depends(get_db)):
 
 # Upload an image
 @app.post("/upload")
-async def upload_image(file: UploadFile = File(...), filename: str = Form(...), db: Session = Depends(get_db)):
+async def upload_image(file: UploadFile = File(...), db: Session = Depends(get_db)):
     content = await file.read()
     image = Image(
         filename=file.filename,
