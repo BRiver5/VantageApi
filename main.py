@@ -2,7 +2,6 @@ from sqlalchemy import create_engine, text, Column, String, Integer, DateTime, L
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 from sqlalchemy.pool import NullPool
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.ext.declarative import declarative_base
 from dotenv import load_dotenv
 from fastapi import FastAPI, Depends, HTTPException, File, UploadFile 
 from pydantic import BaseModel
