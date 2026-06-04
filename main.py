@@ -51,9 +51,9 @@ engine = create_engine(DATABASE_URL, poolclass=NullPool)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 cloudinary.config(
-    cloud_name="dewemodhq",
-    api_key="162634219221387",
-    api_secret="FIVEQkYgRBQ57dxzSn_fMn73oKY",
+    cloud_name=os.getenv("cloud_name"),
+    api_key=os.getenv("api_key"),
+    api_secret=os.getenv("api_secret"),
     secure=True
 )
 
