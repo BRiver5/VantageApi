@@ -3,7 +3,7 @@ from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 from sqlalchemy.pool import NullPool
 from sqlalchemy.dialects.postgresql import UUID
 from dotenv import load_dotenv
-from fastapi import FastAPI, Depends, HTTPException, File, UploadFile 
+from fastapi import FastAPI, Depends, HTTPException, File, UploadFile
 from pydantic import BaseModel
 from datetime import datetime
 import os
@@ -11,15 +11,25 @@ from uuid import uuid4
 # Load environment variables from .env
 load_dotenv()
 
-# Fetch variables (use UPPERCASE names if you prefer)
-USER = os.getenv("user")
-PASSWORD = os.getenv("password")
-HOST = os.getenv("host")
-PORT = os.getenv("port")
-DBNAME = os.getenv("dbname")
+DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    USER = os.getenv("user") or os.getenv("USER")
+    PASSWORD = os.getenv("password") or os.getenv("PASSWORD")
+    HOST = os.getenv("host") or os.getenv("HOST")
+    PORT = os.getenv("port") or os.getenv("PORT")
+    DBNAME = os.getenv("dbname") or os.getenv("DBNAME")
+    DB_SSLMODE = os.getenv("DB_SSLMODE")
+    if USER and PASSWORD and HOST and PORT and DBNAME:
+        DATABASE_URL = f"postgresql+psycopg2://{USER}:{PASSWORD}@{HOST}:{PORT}/{DBNAME}"
+        if DB_SSLMODE:
+            DATABASE_URL += f"?sslmode={DB_SSLMODE}"
+    else:
+        raise RuntimeError(
+            "Database URL is not set. Set DATABASE_URL or USER/PASSWORD/HOST/PORT/DBNAME."
+        )
 
-# Construct the SQLAlchemy connection string
-DATABASE_URL = f"postgresql+psycopg2://{USER}:{PASSWORD}@{HOST}:{PORT}/{DBNAME}?sslmode=require"
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+psycopg2://", 1)
 
 # Create the SQLAlchemy engine
 # Using the Transaction Pooler, so we disable SQLAlchemy client side pooling
