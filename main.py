@@ -157,29 +157,6 @@ async def upload_image(file: UploadFile = File(...)):
         "public_id": result["public_id"]
     }
 
-# Upload Bulk images
-@app.post("/upload-bulk")
-async def upload_bulk(files: list[UploadFile] = File(...), db: Session = Depends(get_db)):
-    uploaded_images = []
-
-    for file in files:
-        result = cloudinary.uploader.upload(file.file)
-        cloud = CloudImage(url=result["secure_url"], public_id=result["public_id"])
-        db.add(cloud)
-        db.flush()
-        uploaded_images.append({
-            "id": cloud.id,
-            "url": cloud.url,
-            "public_id": cloud.public_id,
-        })
-
-    db.commit()
-
-    return {
-        "count": len(uploaded_images),
-        "images": uploaded_images
-    }
-
 # Get image by ID
 @app.get("/images/{image_id}")
 def get_image(image_id: int, db: Session = Depends(get_db)):
