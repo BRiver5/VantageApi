@@ -8,6 +8,8 @@ from pydantic import BaseModel
 from datetime import datetime
 import os
 from uuid import uuid4
+from schemas.character import character
+
 # Load environment variables from .env
 load_dotenv()
 
@@ -141,3 +143,25 @@ async def upload_image(file: UploadFile = File(...), db: Session = Depends(get_d
     db.commit()
     db.refresh(image)
     return {"id": image.id}
+
+# Get an image by ID
+@app.get("/images/{image_id}")
+def get_image(image_id: int, db: Session = Depends(get_db)):
+    image = db.query(Image).filter(Image.id == image_id).first()
+    if not image:
+        raise HTTPException(status_code=404, detail="Image not found")
+    return {
+        "filename": image.filename,
+        "content_type": image.content_type,
+        "data": image.data,
+    }
+
+# Delete an image by ID
+@app.delete("/images/{image_id}")
+def delete_image(image_id: int, db: Session = Depends(get_db)):
+    image = db.query(Image).filter(Image.id == image_id).first()
+    if not image:
+        raise HTTPException(status_code=404, detail="Image not found")
+    db.delete(image)
+    db.commit()
+    return {"deleted": image_id}
