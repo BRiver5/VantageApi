@@ -86,8 +86,10 @@ class UserResponse(BaseModel):
     class Config:
         from_attributes = True
 
-class Image(Base):
-    id = Column(Integer, primary_key=True)
+class CloudImage(Base):
+    __tablename__ = "cloud_images"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
     url = Column(String)
     public_id = Column(String)
 
@@ -164,9 +166,12 @@ async def upload_bulk(files: list[UploadFile] = File(...)):
         result = cloudinary.uploader.upload(file.file)
 
         uploaded_images.append({
-            "url": result["secure_url"],
-            "public_id": result["public_id"]
+            "id": cloud.id,
+            "url": cloud.url,
+            "public_id": cloud.public_id,
         })
+
+    db.commit()
 
     return {
         "count": len(uploaded_images),
@@ -176,7 +181,7 @@ async def upload_bulk(files: list[UploadFile] = File(...)):
 # Get image by ID
 @app.get("/images/{image_id}")
 def get_image(image_id: int, db: Session = Depends(get_db)):
-    image = db.query(Image).filter(Image.id == image_id).first()
+    image = db.query(CloudImage).filter(CloudImage.id == image_id).first()
 
     if not image:
         raise HTTPException(status_code=404, detail="Image not found")
@@ -184,10 +189,10 @@ def get_image(image_id: int, db: Session = Depends(get_db)):
     return {
         "id": image.id,
         "url": image.url,
-        "public_id": image.public_id
+        "public_id": image.public_id,
     }
 
-# Delete an image by ID
+# Delete an image by public_id
 @app.delete("/images/{public_id}")
 def delete_image(public_id: str):
     cloudinary.uploader.destroy(public_id)
