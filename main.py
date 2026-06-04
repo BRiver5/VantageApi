@@ -1,9 +1,10 @@
-from sqlalchemy import create_engine, text, Column, String, Integer, DateTime
+from sqlalchemy import create_engine, text, Column, String, Integer, DateTime, LargeBinary, String
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 from sqlalchemy.pool import NullPool
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.ext.declarative import declarative_base
 from dotenv import load_dotenv
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, File, UploadFile 
 from pydantic import BaseModel
 from datetime import datetime
 import os
@@ -37,6 +38,14 @@ class User(Base):
     name = Column(String, nullable=False)
     email = Column(String, unique=True, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+class Image(Base):
+    __tablename__ = "images"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    filename = Column(String, nullable=False)
+    content_type = Column(String, nullable=False)
+    data = Column(LargeBinary, nullable=False)
 
 # Создаёт таблицы если их нет
 Base.metadata.create_all(engine)
@@ -109,3 +118,17 @@ def delete_user(user_id: int, db: Session = Depends(get_db)):
     db.delete(user)
     db.commit()
     return {"deleted": user_id}
+
+# Upload an image
+@app.post("/upload")
+async def upload_image(file: UploadFile = File(...), db: Session = Depends(get_db)):
+    content = await file.read()
+    image = Image(
+        filename=file.filename,
+        content_type=file.content_type,
+        data=content,
+    )
+    db.add(image)
+    db.commit()
+    db.refresh(image)
+    return {"id": image.id}
