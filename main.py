@@ -11,6 +11,14 @@ from uuid import uuid4
 from schemas.character import character
 import cloudinary
 import cloudinary.uploader
+import logging
+
+# Configure logging
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
+logger = logging.getLogger(__name__)
 
 
 # Load environment variables from .env
@@ -43,9 +51,9 @@ engine = create_engine(DATABASE_URL, poolclass=NullPool)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 cloudinary.config(
-    cloud_name="Root",
-    api_key="416321573319424",
-    api_secret="uyXJOJEQOrerRcv6pBuHqGwuOFk",
+    cloud_name="dewemodhq",
+    api_key="162634219221387",
+    api_secret="FIVEQkYgRBQ57dxzSn_fMn73oKY",
     secure=True
 )
 
@@ -68,8 +76,6 @@ class Image(Base):
     content_type = Column(String, nullable=False)
     data = Column(LargeBinary, nullable=False)
 
-# Создаёт таблицы если их нет
-Base.metadata.create_all(engine)
 
 # --- Pydantic схемы ---
 
@@ -89,10 +95,13 @@ class UserResponse(BaseModel):
 class CloudImage(Base):
     __tablename__ = "cloud_images"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(Integer, primary_key=True)
     url = Column(String)
     public_id = Column(String)
 
+
+# Создаёт таблицы если их нет
+Base.metadata.create_all(engine)
 
 # --- Dependency для сессии ---
 
@@ -108,6 +117,7 @@ app = FastAPI()
 
 @app.get("/")
 def read_root():
+    logger.info("Root endpoint called")
     return {"status": "running"}
 
 # Get all users
@@ -148,20 +158,30 @@ def delete_user(user_id: int, db: Session = Depends(get_db)):
     return {"deleted": user_id}
 
 # Upload an image
-@app.post("/upload")
-async def upload_image(file: UploadFile = File(...)):
-    result = cloudinary.uploader.upload(file.file)
+@app.post("/upload_image")
+async def upload_image(file: UploadFile = File(...), db: Session = Depends(get_db)):
+    try:
+        logger.info(f"Upload started for file: {file.filename}")
+        logger.debug(f"File content type: {file.content_type}")
+        
+        result = cloudinary.uploader.upload(file.file)
+        logger.info(f"Upload successful: {result['public_id']}")
+        db.add(CloudImage(url=result["secure_url"], public_id=result["public_id"]))
+        db.commit()
 
-    return {
-        "url": result["secure_url"],
-        "public_id": result["public_id"]
-    }
+        return {
+            "url": result["secure_url"],
+            "public_id": result["public_id"]
+        }
+    except Exception as e:
+        logger.error(f"Upload error: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
 
 # Get image by ID
-@app.get("/images/{image_id}")
-def get_image(image_id: int, db: Session = Depends(get_db)):
-    image = db.query(CloudImage).filter(CloudImage.id == image_id).first()
-
+@app.get("/images/public/{public_id}")
+def get_image(public_id: str, db: Session = Depends(get_db)):
+    image = db.query(CloudImage).filter(CloudImage.public_id == public_id).first()
+    print(public_id)
     if not image:
         raise HTTPException(status_code=404, detail="Image not found")
 
@@ -173,6 +193,11 @@ def get_image(image_id: int, db: Session = Depends(get_db)):
 
 # Delete an image by public_id
 @app.delete("/images/{public_id}")
-def delete_image(public_id: str):
+def delete_image(public_id: str, db: Session = Depends(get_db)):
     cloudinary.uploader.destroy(public_id)
+    if not cloudinary.uploader.destroy(public_id):
+        raise HTTPException(status_code=404, detail="Image not found")
+    db.query(CloudImage).filter(CloudImage.public_id == public_id).delete()
+    db.commit()
+    
     return {"deleted": public_id}
