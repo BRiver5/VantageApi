@@ -4,6 +4,7 @@ from sqlalchemy.pool import NullPool
 from sqlalchemy.dialects.postgresql import ARRAY, UUID
 from dotenv import load_dotenv
 from fastapi import FastAPI, Depends, HTTPException, File, UploadFile, Form
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from datetime import datetime
 import json
@@ -228,6 +229,23 @@ def parse_datetime(value: str) -> datetime:
 
 
 app = FastAPI()
+
+CORS_ORIGINS = [
+    origin.strip()
+    for origin in os.getenv(
+        "CORS_ORIGINS",
+        "http://localhost:5173,http://127.0.0.1:5173",
+    ).split(",")
+    if origin.strip()
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=CORS_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.get("/")
 def read_root():
