@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, text, Column, String, Integer, DateTime, LargeBinary, String
+from sqlalchemy import create_engine, text, Column, String, Integer, DateTime, LargeBinary, JSON
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 from sqlalchemy.pool import NullPool
 from sqlalchemy.dialects.postgresql import UUID
@@ -8,10 +8,12 @@ from pydantic import BaseModel
 from datetime import datetime
 import os
 from uuid import uuid4
-from schemas.character import character
 import cloudinary
 import cloudinary.uploader
 import logging
+
+from schemas.character import character
+from schemas.item import item, weapon_details, armor_details
 
 # Configure logging
 logging.basicConfig(
@@ -63,10 +65,11 @@ class Base(DeclarativeBase):
 class User(Base):
     __tablename__ = "users"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
     name = Column(String, nullable=False)
     email = Column(String, unique=True, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+    favourite_settings = Column(list(UUID(as_uuid=True)))  # List of favourite setting IDs
 
 class Image(Base):
     __tablename__ = "images"
@@ -76,6 +79,43 @@ class Image(Base):
     content_type = Column(String, nullable=False)
     data = Column(LargeBinary, nullable=False)
 
+class CampaignSettings(Base):
+    __tablename__ = "campaign_settings"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    settings_pictures = Column(String)  # JSON string with picture URLs
+    settings_title = Column(String)
+    settings_description = Column(String)
+    likes = Column(Integer, default=0)
+    
+class Books(Base):
+    __tablename__ = "books"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    title = Column(String, nullable=False)
+    book_cover_url = Column(String) # URL обложки книги
+    book_code = Column(String, unique=True, nullable=False)
+    author = Column(String, nullable=False)
+    published_date = Column(DateTime, nullable=False)
+    campaign_id = Column(UUID(as_uuid=True) or None)  # ID кампании, к которой относится книга
+    settings_id = Column(UUID(as_uuid=True) or None)  # ID сэттингов кампании, к которой относится книга
+    is_basic = Column(bool, default=False)  # True если базовая книга, False если пользовательская
+
+class Item(Base):
+    __tablename__ = "items"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    item_name = Column(String, nullable=False)
+    item_type = Column(String, nullable=False)
+    rarity = Column(String, nullable=False)
+    attunement_required = Column(bool, nullable=False)
+    weight = Column(float, nullable=False)
+    cost_copper = Column(Integer, nullable=False)
+    description = Column(String, nullable=False)
+    item_source = Column(UUID(as_uuid=True), nullable=False)  # ID книги, из которой взят предмет
+    weapon_details = Column(JSON | None)  # Хранит JSON объект
+    armor_details = Column(JSON | None)   # Хранит JSON объект
+    
 
 # --- Pydantic схемы ---
 
