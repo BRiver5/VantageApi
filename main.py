@@ -3,8 +3,9 @@ from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 from sqlalchemy.pool import NullPool
 from sqlalchemy.dialects.postgresql import ARRAY, UUID
 from dotenv import load_dotenv
-from fastapi import FastAPI, Depends, HTTPException, File, UploadFile, Form
+from fastapi import FastAPI, Depends, HTTPException, File, UploadFile, Form, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from datetime import datetime
 import json
@@ -150,6 +151,46 @@ class CloudImage(Base):
 # Создаёт таблицы если их нет
 Base.metadata.create_all(engine)
 
+
+def ensure_schema() -> None:
+    """Приводит схему PostgreSQL в соответствие с ORM-моделями."""
+    migrations = [
+        # books: legacy book_cover_url → book_cover_image_id
+        """
+        DO $$
+        BEGIN
+            IF EXISTS (
+                SELECT 1 FROM information_schema.columns
+                WHERE table_schema = 'public'
+                  AND table_name = 'books'
+                  AND column_name = 'book_cover_url'
+            ) AND NOT EXISTS (
+                SELECT 1 FROM information_schema.columns
+                WHERE table_schema = 'public'
+                  AND table_name = 'books'
+                  AND column_name = 'book_cover_image_id'
+            ) THEN
+                ALTER TABLE books DROP COLUMN book_cover_url;
+            END IF;
+        END $$;
+        """,
+        "ALTER TABLE books ADD COLUMN IF NOT EXISTS book_cover_image_id INTEGER;",
+        "ALTER TABLE books ADD COLUMN IF NOT EXISTS settings_id UUID;",
+        "ALTER TABLE books ADD COLUMN IF NOT EXISTS is_basic BOOLEAN DEFAULT FALSE;",
+        "ALTER TABLE items ADD COLUMN IF NOT EXISTS item_image_id INTEGER;",
+        "ALTER TABLE items ADD COLUMN IF NOT EXISTS equipped_effects JSON;",
+    ]
+    try:
+        with engine.begin() as conn:
+            for migration in migrations:
+                conn.execute(text(migration))
+        logger.info("Database schema migration completed")
+    except Exception:
+        logger.exception("Database schema migration failed")
+
+
+ensure_schema()
+
 # --- Dependency для сессии ---
 
 def get_db():
@@ -247,6 +288,14 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    if isinstance(exc, HTTPException):
+        raise exc
+    logger.exception("Unhandled error on %s", request.url.path)
+    return JSONResponse(status_code=500, content={"detail": "Internal server error"})
 
 @app.get("/")
 def read_root():
