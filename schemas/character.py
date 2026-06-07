@@ -126,6 +126,7 @@ class sub_race_info(BaseModel):
     sub_race_name: str
     area_of_living: list[str] = Field(default_factory=list)
     increase_ability_scores: dict[str, int] = Field(default_factory=dict)
+    race_features: str | None = None
     size: str | None = None
     speed: int | None = None
     darkvision: int | None = None
@@ -153,4 +154,5 @@ class race_info(BaseModel):
     swimming_speed: int
     climbing_speed: int
     area_of_living: list[str]
+    race_features: str | None = None
     sub_races: list[sub_race_info] | None = None

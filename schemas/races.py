@@ -9,6 +9,7 @@ class SubRace(BaseModel):
     order: int = 0
     sub_race_name: str
     description: str | None = None
+    race_features: str | None = None
     image_gallery: list[str] | None = None
     area_of_living: list[str] = Field(default_factory=list)
     increase_ability_scores: dict[str, int] = Field(default_factory=dict)
@@ -27,6 +28,7 @@ class SubRace(BaseModel):
 class Race(BaseModel):
     race_name: str
     description: str | None = None
+    race_features: str | None = None
     image_gallery: list[str] | None = None
     settings_id: UUID | None = None
     book_source_id: UUID | None = None

@@ -483,6 +483,7 @@ def race_to_orm(data: RaceSchema) -> dict[str, Any]:
     return {
         "race_name": data.race_name,
         "description": data.description,
+        "race_features": data.race_features,
         "image_gallery": data.image_gallery,
         "settings_id": data.settings_id,
         "book_source_id": data.book_source_id,
@@ -506,6 +507,7 @@ def race_to_response(row) -> RaceResponse:
         id=row.id,
         race_name=row.race_name,
         description=row.description,
+        race_features=row.race_features,
         image_gallery=row.image_gallery,
         settings_id=row.settings_id,
         book_source_id=row.book_source_id,
