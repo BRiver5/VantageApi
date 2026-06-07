@@ -29,6 +29,8 @@ from schemas.location import Location as LocationSchema, LocationResponse
 from schemas.communities import Comunnity as CommunitySchema, CommunityResponse
 from schemas.religion import Religion as ReligionSchema, ReligionResponse
 from schemas.termins import Termins as TerminsSchema, TerminsResponse
+from schemas.classes import GameClass as GameClassSchema, GameClassResponse
+from schemas.races import Race as RaceSchema, RaceResponse
 from services.image_upload import save_uploaded_image
 from services.crud_helpers import register_uuid_crud
 from services import serializers
@@ -263,6 +265,47 @@ class Creature(Base):
     mythical_description = Column(String, nullable=True)
     creature_description = Column(String, nullable=True)
     image_gallery = Column(JSON, nullable=True)
+
+
+class GameClass(Base):
+    __tablename__ = "classes"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    class_name = Column(String, nullable=False)
+    description = Column(String, nullable=True)
+    image_gallery = Column(JSON, nullable=True)
+    settings_id = Column(UUID(as_uuid=True), nullable=True)
+    book_source_id = Column(UUID(as_uuid=True), nullable=True)
+    hit_dice = Column(Integer, nullable=False)
+    saving_throw_proficiencies = Column(JSON, default=list)
+    armor_proficiencies = Column(JSON, default=list)
+    weapon_proficiencies = Column(JSON, default=list)
+    speed_bonus = Column(Integer, default=0)
+    is_caster = Column(Boolean, default=False)
+    default_spellcasting_ability = Column(String, nullable=True)
+    class_resource_keys = Column(JSON, default=list)
+
+
+class RaceCatalog(Base):
+    __tablename__ = "races"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    race_name = Column(String, nullable=False)
+    description = Column(String, nullable=True)
+    image_gallery = Column(JSON, nullable=True)
+    settings_id = Column(UUID(as_uuid=True), nullable=True)
+    book_source_id = Column(UUID(as_uuid=True), nullable=True)
+    increase_ability_scores = Column(JSON, default=dict)
+    size = Column(String, default="Medium")
+    speed = Column(Integer, default=30)
+    darkvision = Column(Integer, default=0)
+    languages = Column(JSON, default=list)
+    max_age = Column(Integer, default=100)
+    age_of_adulthood = Column(Integer, default=18)
+    race_type = Column(String, default="humanoid")
+    flight_speed = Column(Integer, default=0)
+    swimming_speed = Column(Integer, default=0)
+    climbing_speed = Column(Integer, default=0)
 
 
 class Character(Base):
@@ -907,6 +950,8 @@ def delete_book(book_id: PyUUID, db: Session = Depends(get_db)):
 
 CRUD_ENTITIES = [
     ("/spells", "Spell", Spell, SpellSchema, SpellResponse, serializers.spell_to_orm, serializers.spell_to_response),
+    ("/classes", "GameClass", GameClass, GameClassSchema, GameClassResponse, serializers.game_class_to_orm, serializers.game_class_to_response),
+    ("/races", "Race", RaceCatalog, RaceSchema, RaceResponse, serializers.race_to_orm, serializers.race_to_response),
     ("/features", "ClassFeature", ClassFeature, FeatureSchema, FeatureResponse, serializers.feature_to_orm, serializers.feature_to_response),
     ("/class-resources", "ClassResource", ClassResource, ClassResourceSchema, ClassResourceResponse, serializers.class_resource_to_orm, serializers.class_resource_to_response),
     ("/creatures", "Creature", Creature, CreatureSchema, CreatureResponse, serializers.creature_to_orm, serializers.creature_to_response),

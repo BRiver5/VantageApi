@@ -7,6 +7,8 @@ from pydantic import BaseModel
 from schemas.book import BookResponse
 from schemas.campaign import Campaign, CampaignResponse
 from services.ordering import chapters_to_content, normalize_campaign_content
+from schemas.classes import GameClass as GameClassSchema, GameClassResponse
+from schemas.races import Race as RaceSchema, RaceResponse
 from schemas.character import character as CharacterSchema, CharacterResponse
 from schemas.class_resource import (
     class_resource_template as ClassResourceSchema,
@@ -431,6 +433,90 @@ def termins_to_response(row) -> TerminsResponse:
         description=row.description,
         image_gallery=row.image_gallery,
         book_source_id=row.book_source_id,
+    )
+
+
+# --- Classes ---
+
+def game_class_to_orm(data: GameClassSchema) -> dict[str, Any]:
+    return {
+        "class_name": data.class_name,
+        "description": data.description,
+        "image_gallery": data.image_gallery,
+        "settings_id": data.settings_id,
+        "book_source_id": data.book_source_id,
+        "hit_dice": data.hit_dice,
+        "saving_throw_proficiencies": data.saving_throw_proficiencies,
+        "armor_proficiencies": data.armor_proficiencies,
+        "weapon_proficiencies": data.weapon_proficiencies,
+        "speed_bonus": data.speed_bonus,
+        "is_caster": data.is_caster,
+        "default_spellcasting_ability": data.default_spellcasting_ability,
+        "class_resource_keys": data.class_resource_keys,
+    }
+
+
+def game_class_to_response(row) -> GameClassResponse:
+    return GameClassResponse(
+        id=row.id,
+        class_name=row.class_name,
+        description=row.description,
+        image_gallery=row.image_gallery,
+        settings_id=row.settings_id,
+        book_source_id=row.book_source_id,
+        hit_dice=row.hit_dice,
+        saving_throw_proficiencies=row.saving_throw_proficiencies or [],
+        armor_proficiencies=row.armor_proficiencies or [],
+        weapon_proficiencies=row.weapon_proficiencies or [],
+        speed_bonus=row.speed_bonus or 0,
+        is_caster=row.is_caster or False,
+        default_spellcasting_ability=row.default_spellcasting_ability,
+        class_resource_keys=row.class_resource_keys or [],
+    )
+
+
+# --- Races ---
+
+def race_to_orm(data: RaceSchema) -> dict[str, Any]:
+    return {
+        "race_name": data.race_name,
+        "description": data.description,
+        "image_gallery": data.image_gallery,
+        "settings_id": data.settings_id,
+        "book_source_id": data.book_source_id,
+        "increase_ability_scores": data.increase_ability_scores,
+        "size": data.size,
+        "speed": data.speed,
+        "darkvision": data.darkvision,
+        "languages": data.languages,
+        "max_age": data.max_age,
+        "age_of_adulthood": data.age_of_adulthood,
+        "race_type": data.race_type,
+        "flight_speed": data.flight_speed,
+        "swimming_speed": data.swimming_speed,
+        "climbing_speed": data.climbing_speed,
+    }
+
+
+def race_to_response(row) -> RaceResponse:
+    return RaceResponse(
+        id=row.id,
+        race_name=row.race_name,
+        description=row.description,
+        image_gallery=row.image_gallery,
+        settings_id=row.settings_id,
+        book_source_id=row.book_source_id,
+        increase_ability_scores=row.increase_ability_scores or {},
+        size=row.size,
+        speed=row.speed,
+        darkvision=row.darkvision or 0,
+        languages=row.languages or [],
+        max_age=row.max_age,
+        age_of_adulthood=row.age_of_adulthood,
+        race_type=row.race_type,
+        flight_speed=row.flight_speed or 0,
+        swimming_speed=row.swimming_speed or 0,
+        climbing_speed=row.climbing_speed or 0,
     )
 
 
