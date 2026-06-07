@@ -135,3 +135,10 @@ class race_info(BaseModel):
     flight_speed: int
     swimming_speed: int
     climbing_speed: int
+    area_of_living: list[str]
+    sub_races: list[sub_race_info] = None
+
+class sub_race_info(race_info):
+    sub_race_name: str
+    area_of_living: list[str]
+    increase_ability_scores: dict[str, int]
