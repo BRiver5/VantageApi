@@ -306,6 +306,7 @@ class RaceCatalog(Base):
     flight_speed = Column(Integer, default=0)
     swimming_speed = Column(Integer, default=0)
     climbing_speed = Column(Integer, default=0)
+    sub_races = Column(JSON, nullable=True)
 
 
 class Character(Base):
@@ -458,6 +459,7 @@ def ensure_schema() -> None:
         "ALTER TABLE items ADD COLUMN IF NOT EXISTS item_image_gallery JSON;",
         "ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS content JSON;",
         "ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS \"order\" INTEGER;",
+        "ALTER TABLE races ADD COLUMN IF NOT EXISTS sub_races JSON;",
     ]
     try:
         with engine.begin() as conn:

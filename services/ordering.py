@@ -21,6 +21,13 @@ def reindex_orders(items: list[Any]) -> list[Any]:
     return result
 
 
+def normalize_sub_races(sub_races: list[Any] | None) -> list[Any] | None:
+    if not sub_races:
+        return sub_races
+    sorted_sub_races = sort_by_order(sub_races)
+    return reindex_orders(sorted_sub_races or [])
+
+
 def normalize_campaign_content(content: list[Any] | None) -> list[Any] | None:
     if not content:
         return content

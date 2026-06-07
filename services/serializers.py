@@ -6,7 +6,7 @@ from pydantic import BaseModel
 
 from schemas.book import BookResponse
 from schemas.campaign import Campaign, CampaignResponse
-from services.ordering import chapters_to_content, normalize_campaign_content
+from services.ordering import chapters_to_content, normalize_campaign_content, normalize_sub_races
 from schemas.classes import GameClass as GameClassSchema, GameClassResponse
 from schemas.races import Race as RaceSchema, RaceResponse
 from schemas.character import character as CharacterSchema, CharacterResponse
@@ -478,6 +478,8 @@ def game_class_to_response(row) -> GameClassResponse:
 # --- Races ---
 
 def race_to_orm(data: RaceSchema) -> dict[str, Any]:
+    sub_races_raw = _dump_list(data.sub_races)
+    normalized_sub_races = normalize_sub_races(sub_races_raw)
     return {
         "race_name": data.race_name,
         "description": data.description,
@@ -495,6 +497,7 @@ def race_to_orm(data: RaceSchema) -> dict[str, Any]:
         "flight_speed": data.flight_speed,
         "swimming_speed": data.swimming_speed,
         "climbing_speed": data.climbing_speed,
+        "sub_races": normalized_sub_races,
     }
 
 
@@ -517,6 +520,7 @@ def race_to_response(row) -> RaceResponse:
         flight_speed=row.flight_speed or 0,
         swimming_speed=row.swimming_speed or 0,
         climbing_speed=row.climbing_speed or 0,
+        sub_races=normalize_sub_races(row.sub_races),
     )
 
 

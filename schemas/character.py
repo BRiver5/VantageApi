@@ -121,6 +121,23 @@ class class_info(BaseModel):
 class character_class(class_info):
     level: int
 
+
+class sub_race_info(BaseModel):
+    sub_race_name: str
+    area_of_living: list[str] = Field(default_factory=list)
+    increase_ability_scores: dict[str, int] = Field(default_factory=dict)
+    size: str | None = None
+    speed: int | None = None
+    darkvision: int | None = None
+    languages: list[str] | None = None
+    max_age: int | None = None
+    age_of_adulthood: int | None = None
+    race_type: str | None = None
+    flight_speed: int | None = None
+    swimming_speed: int | None = None
+    climbing_speed: int | None = None
+
+
 class race_info(BaseModel):
     race_name: str
     increase_ability_scores: dict[str, int]
@@ -136,9 +153,4 @@ class race_info(BaseModel):
     swimming_speed: int
     climbing_speed: int
     area_of_living: list[str]
-    sub_races: list[sub_race_info] = None
-
-class sub_race_info(race_info):
-    sub_race_name: str
-    area_of_living: list[str]
-    increase_ability_scores: dict[str, int]
+    sub_races: list[sub_race_info] | None = None
