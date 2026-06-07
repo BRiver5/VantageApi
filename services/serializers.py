@@ -5,8 +5,8 @@ from typing import Any
 from pydantic import BaseModel
 
 from schemas.book import BookResponse
-from schemas.campaign import Campaign
-from services.ordering import chapters_to_content, normalize_campaign_content, CampaignResponse
+from schemas.campaign import Campaign, CampaignResponse
+from services.ordering import chapters_to_content, normalize_campaign_content
 from schemas.character import character as CharacterSchema, CharacterResponse
 from schemas.class_resource import (
     class_resource_template as ClassResourceSchema,
