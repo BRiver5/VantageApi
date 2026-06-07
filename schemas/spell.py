@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class spell_components(BaseModel):
@@ -25,5 +25,13 @@ class spell(BaseModel):
     description: str
     higher_levels: str | None
     available_classes: list[str]
+    available_races: list[str]
+    available_subclasses: list[str]
     spellcasting_ability: str | None
     spell_source: UUID
+
+
+class SpellResponse(spell):
+    id: UUID
+
+    model_config = ConfigDict(from_attributes=True)

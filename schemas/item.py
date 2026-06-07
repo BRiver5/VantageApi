@@ -35,8 +35,9 @@ class item(BaseModel):
     item_source: UUID
     weapon: weapon_details | None
     armor: armor_details | None
+    tool_category: str | None = None
     equipped_effects: list[functional_effect] = Field(default_factory=list)
-
+    item_image_gallery: list[str] | None = None
 
 class equipped_item(BaseModel):
     """Экипировка на персонаже (слот + ссылка на предмет)."""

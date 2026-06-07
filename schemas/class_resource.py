@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Annotated, Literal
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from .effects import functional_effect
 
@@ -66,6 +66,12 @@ class class_resource_template(BaseModel):
     activation_effects: list[functional_effect] = Field(default_factory=list)
     passive_effects: list[functional_effect] = Field(default_factory=list)
     level_required: int = 1
+
+
+class ClassResourceResponse(class_resource_template):
+    id: UUID
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 # --- Состояние ресурса на персонаже (дискриминированный union по kind) ---

@@ -1,17 +1,16 @@
 from uuid import UUID
-from typing import List, Literal
+from typing import List
 
 from pydantic import BaseModel, ConfigDict
 
-class Religion(BaseModel):
+class Termins(BaseModel):
     name: str
-    description: str | None = None
+    description: str
     image_gallery: List[str] | None = None
-    settings_id: UUID | None = None
     book_source_id: UUID | None = None
 
 
-class ReligionResponse(Religion):
+class TerminsResponse(Termins):
     id: UUID
 
     model_config = ConfigDict(from_attributes=True)

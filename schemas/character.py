@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from .class_resource import character_class_resource
 from .item import equipped_item
@@ -87,6 +87,12 @@ class character(BaseModel):
     electrum: int
     gold: int
     platinum: int
+
+
+class CharacterResponse(character):
+    id: UUID
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 

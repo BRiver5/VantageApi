@@ -4,7 +4,7 @@ from uuid import UUID
 
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from .effects import functional_effect
 
@@ -40,3 +40,9 @@ class class_feature(BaseModel):
     effects: list[functional_effect] = Field(default_factory=list)
     options: list[feature_option] | None = None
     prerequisite_features: list[UUID] = Field(default_factory=list)
+
+
+class FeatureResponse(class_feature):
+    id: UUID
+
+    model_config = ConfigDict(from_attributes=True)

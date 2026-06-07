@@ -1,7 +1,7 @@
 from uuid import UUID
 from typing import List, Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 class Location(BaseModel):
     name: str
@@ -12,3 +12,9 @@ class Location(BaseModel):
     location_type: Literal['Plane', 'World', 'Continent', 'Region', 'Country', 'Village', 'City', 'Place'] | None = None
     super_location: UUID | None = None
     community_id: UUID | None = None
+
+
+class LocationResponse(Location):
+    id: UUID
+
+    model_config = ConfigDict(from_attributes=True)

@@ -1,7 +1,7 @@
 from uuid import UUID
 from typing import List, Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class Creature(BaseModel):
@@ -64,3 +64,9 @@ class Creature(BaseModel):
     creature_description: str | None = None
 
     image_gallery: List[str] | None = None
+
+
+class CreatureResponse(Creature):
+    id: UUID
+
+    model_config = ConfigDict(from_attributes=True)

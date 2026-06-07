@@ -21,6 +21,8 @@ class ItemResponse(BaseModel):
     weapon_details: WeaponDetailsSchema | None = None
     armor_details: ArmorDetailsSchema | None = None
     equipped_effects: list[functional_effect] = Field(default_factory=list)
+    tool_category: str | None = None
+    item_image_gallery: list[str] | None = None
 
     class Config:
         from_attributes = True
