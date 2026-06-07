@@ -16,7 +16,7 @@ import cloudinary.uploader
 import logging
 
 from schemas.item import item as ItemSchema
-from schemas.book import BookResponse
+from schemas.book import BookResponse, LinkedCampaignSummary
 from schemas.setting import SettingResponse
 from schemas.item_response import ItemResponse
 from schemas.spell import spell as SpellSchema, SpellResponse
@@ -291,6 +291,8 @@ class Campaign(Base):
     preferable_player_minimum_level = Column(Integer, nullable=True)
     preferable_player_maximum_level = Column(Integer, nullable=True)
     chapters = Column(JSON, nullable=True)
+    content = Column(JSON, nullable=True)
+    order = Column(Integer, nullable=True)
     custom_creatures = Column(JSON, nullable=True)
     custom_locations = Column(JSON, nullable=True)
     custom_communities = Column(JSON, nullable=True)
@@ -411,11 +413,33 @@ def ensure_schema() -> None:
         "ALTER TABLE items ADD COLUMN IF NOT EXISTS equipped_effects JSON;",
         "ALTER TABLE items ADD COLUMN IF NOT EXISTS tool_category VARCHAR;",
         "ALTER TABLE items ADD COLUMN IF NOT EXISTS item_image_gallery JSON;",
+        "ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS content JSON;",
+        "ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS \"order\" INTEGER;",
     ]
     try:
         with engine.begin() as conn:
             for migration in migrations:
                 conn.execute(text(migration))
+            rows = conn.execute(
+                text(
+                    "SELECT id, chapters FROM campaigns "
+                    "WHERE content IS NULL AND chapters IS NOT NULL"
+                )
+            ).fetchall()
+            for row in rows:
+                chapters = row.chapters
+                if not chapters:
+                    continue
+                import json
+
+                content = [
+                    {"order": i, "kind": "chapter", "chapter": ch, "dungeon": None}
+                    for i, ch in enumerate(chapters)
+                ]
+                conn.execute(
+                    text("UPDATE campaigns SET content = :content WHERE id = :id"),
+                    {"content": json.dumps(content), "id": str(row.id)},
+                )
         logger.info("Database schema migration completed")
     except Exception:
         logger.exception("Database schema migration failed")
@@ -447,6 +471,12 @@ def parse_picture_ids(raw: str | None) -> list[int]:
 
 
 def build_book_response(db: Session, book: Books) -> BookResponse:
+    linked = (
+        db.query(Campaign)
+        .filter(Campaign.book_source_id == book.id)
+        .order_by(Campaign.order.asc().nullslast(), Campaign.name.asc())
+        .all()
+    )
     return BookResponse(
         id=book.id,
         title=book.title,
@@ -471,6 +501,10 @@ def build_book_response(db: Session, book: Books) -> BookResponse:
         new_feats_count=book.new_feats_count or 0,
         new_items_count=book.new_items_count or 0,
         is_basic=book.is_basic,
+        linked_campaigns=[
+            LinkedCampaignSummary(id=c.id, name=c.name, order=c.order)
+            for c in linked
+        ],
     )
 
 

@@ -5,6 +5,12 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict
 
 
+class LinkedCampaignSummary(BaseModel):
+    id: UUID
+    name: str
+    order: int | None = None
+
+
 class BookResponse(BaseModel):
     id: UUID
     title: str
@@ -29,5 +35,6 @@ class BookResponse(BaseModel):
     new_feats_count: int
     new_items_count: int
     is_basic: bool
+    linked_campaigns: list[LinkedCampaignSummary] = []
 
     model_config = ConfigDict(from_attributes=True)

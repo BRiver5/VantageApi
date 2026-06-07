@@ -1,22 +1,23 @@
 from __future__ import annotations
 
+from typing import Literal
 from uuid import UUID
-from typing import List, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
 
 class Dungeon_fill(BaseModel):
-    treasures: List[UUID] | None = None
-    traps: List[UUID] | None = None
-    enemies: List[UUID] | None = None
+    treasures: list[UUID] | None = None
+    traps: list[UUID] | None = None
+    enemies: list[UUID] | None = None
     coins: int | None = None
 
 
 class Room(BaseModel):
+    order: int = 0
     name: str
     description: str | None = None
-    image_gallery: List[str] | None = None
+    image_gallery: list[str] | None = None
     text_content: str
     fill: Dungeon_fill | None = None
 
@@ -24,26 +25,34 @@ class Room(BaseModel):
 class Dungeon(BaseModel):
     name: str
     description: str | None = None
-    image_gallery: List[str] | None = None
+    image_gallery: list[str] | None = None
     text_content: str
-    rooms: List[Room] | None = None
+    rooms: list[Room] | None = None
     fill: Dungeon_fill | None = None
 
 
 class Chapter(BaseModel):
     name: str
     description: str | None = None
-    image_gallery: List[str] | None = None
+    image_gallery: list[str] | None = None
     text_content: str
     fill: Dungeon_fill | None = None
+
+
+class CampaignContentBlock(BaseModel):
+    order: int = 0
+    kind: Literal["chapter", "dungeon"]
+    chapter: Chapter | None = None
+    dungeon: Dungeon | None = None
 
 
 class Campaign(BaseModel):
     name: str
     description: str | None = None
-    image_gallery: List[str] | None = None
+    image_gallery: list[str] | None = None
     settings_id: UUID | None = None
     book_source_id: UUID | None = None
+    order: int | None = None
 
     campaign_type: Literal['Homebrew', 'Published', 'Other'] | None = None
     campaign_lenght: Literal['One-shot', 'Adventure', 'Mini-Campaign', 'Module'] | None = None
@@ -54,11 +63,12 @@ class Campaign(BaseModel):
     preferable_player_minimum_level: int | None = None
     preferable_player_maximum_level: int | None = None
 
-    chapters: List[Chapter] | None = None
+    content: list[CampaignContentBlock] | None = None
+    chapters: list[Chapter] | None = Field(default=None, deprecated=True)
 
-    custom_creatures: List[UUID] | None = None
-    custom_locations: List[UUID] | None = None
-    custom_communities: List[UUID] | None = None
+    custom_creatures: list[UUID] | None = None
+    custom_locations: list[UUID] | None = None
+    custom_communities: list[UUID] | None = None
 
 
 class CampaignResponse(Campaign):

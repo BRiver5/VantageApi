@@ -5,7 +5,8 @@ from typing import Any
 from pydantic import BaseModel
 
 from schemas.book import BookResponse
-from schemas.campaign import Campaign, CampaignResponse
+from schemas.campaign import Campaign
+from services.ordering import chapters_to_content, normalize_campaign_content, CampaignResponse
 from schemas.character import character as CharacterSchema, CharacterResponse
 from schemas.class_resource import (
     class_resource_template as ClassResourceSchema,
@@ -279,12 +280,19 @@ def character_to_response(row) -> CharacterResponse:
 # --- Campaign ---
 
 def campaign_to_orm(data: Campaign) -> dict[str, Any]:
+    content_raw = _dump_list(data.content)
+    if content_raw is None and data.chapters:
+        content_raw = chapters_to_content(
+            [c.model_dump(mode="json") if hasattr(c, "model_dump") else c for c in data.chapters]
+        )
+    normalized = normalize_campaign_content(content_raw)
     return {
         "name": data.name,
         "description": data.description,
         "image_gallery": data.image_gallery,
         "settings_id": data.settings_id,
         "book_source_id": data.book_source_id,
+        "order": data.order,
         "campaign_type": data.campaign_type,
         "campaign_lenght": data.campaign_lenght,
         "campaign_setting": data.campaign_setting,
@@ -292,6 +300,7 @@ def campaign_to_orm(data: Campaign) -> dict[str, Any]:
         "preferable_player_count": data.preferable_player_count,
         "preferable_player_minimum_level": data.preferable_player_minimum_level,
         "preferable_player_maximum_level": data.preferable_player_maximum_level,
+        "content": normalized,
         "chapters": _dump_list(data.chapters),
         "custom_creatures": data.custom_creatures,
         "custom_locations": data.custom_locations,
@@ -300,6 +309,10 @@ def campaign_to_orm(data: Campaign) -> dict[str, Any]:
 
 
 def campaign_to_response(row) -> CampaignResponse:
+    content = row.content
+    if not content and row.chapters:
+        content = chapters_to_content(row.chapters)
+    normalized = normalize_campaign_content(content)
     return CampaignResponse(
         id=row.id,
         name=row.name,
@@ -307,6 +320,7 @@ def campaign_to_response(row) -> CampaignResponse:
         image_gallery=row.image_gallery,
         settings_id=row.settings_id,
         book_source_id=row.book_source_id,
+        order=row.order,
         campaign_type=row.campaign_type,
         campaign_lenght=row.campaign_lenght,
         campaign_setting=row.campaign_setting,
@@ -314,6 +328,7 @@ def campaign_to_response(row) -> CampaignResponse:
         preferable_player_count=row.preferable_player_count,
         preferable_player_minimum_level=row.preferable_player_minimum_level,
         preferable_player_maximum_level=row.preferable_player_maximum_level,
+        content=normalized,
         chapters=row.chapters,
         custom_creatures=row.custom_creatures,
         custom_locations=row.custom_locations,
